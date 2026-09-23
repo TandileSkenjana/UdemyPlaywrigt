@@ -1,51 +1,45 @@
 import { test, expect } from "allure-playwright";
-import {customtest} from '../utils/test-base';
+import { customTest } from "../utils _ts/test-base";
 import { POManager } from "../pageobjects-ts/pageobjects/POManager";
-import { LoginPage } from "../pageobjects-ts/pageobjects/LoginPage";
-import { DashboardPage } from "../pageobjects-ts/pageobjects/DashboardPage"; 
 
 declare const require: (id: string) => any;
 
-const dataSet = JSON.parse(JSON.stringify(require('../utils/placeorderTestData.json')));
+const dataSet = JSON.parse(JSON.stringify(require('../utils _ts /placeorderTestData.json')));
 for (const data of dataSet) {
   test(`@Webs Client App Login for ${data.productName}`, async ({ page }) => {
     
-
     
       const poManager = new POManager(page);
-      const loginPage = new LoginPage(page);
-      const dashboardPage = new DashboardPage(page);
+     
+const products = page.locator(".card-body");
+     const loginPage = poManager.getLoginPage();
+     await loginPage.goTo();
+     await loginPage.validLogin(data.username,data.password);
+     const dashboardPage = poManager.getDashboardPage();
+     await dashboardPage.searchProductAddCart(data.productName);
+     await dashboardPage.navigateToCart();
 
-      await loginPage.goTo();
-      await loginPage.validLogin(data.username, data.password);
-      await dashboardPage.searchProductAddCart(data.productName);
-      await dashboardPage.navigateToCart();
+    const cartPage = poManager.getCartPage();
+    await cartPage.VerifyProductIsDisplayed(data.productName);
+    await cartPage.Checkout();
 
-      const cartPage = poManager.getCartPage();
-      await cartPage.VerifyProductIsDisplayed(data.productName);
-      await cartPage.Checkout();
+    const ordersReviewPage = poManager.getOrdersReviewPage();
+    await ordersReviewPage.searchCountryAndSelect("ind","India");
+    let orderId:any;
+     orderId = await ordersReviewPage.SubmitAndGetOrderId();
+   console.log(orderId);
+   await dashboardPage.navigateToOrders();
+   const ordersHistoryPage = poManager.getOrdersHistoryPage();
+   await ordersHistoryPage.searchOrderAndSelect(orderId);
+   expect(orderId.includes(await ordersHistoryPage.getOrderId())).toBeTruthy();
 
-      const ordersReviewPage = poManager.getOrdersReviewPage();
-      await ordersReviewPage.searchCountryAndSelect('ind', 'India');
 
-      const orderId = await ordersReviewPage.SubmitAndGetOrderId();
-      console.log(orderId);
 
-      expect(orderId).not.toBeNull();
-      const orderIdValue = orderId ?? "";
-
-      await dashboardPage.navigateToOrders();
-      const ordersHistoryPage = poManager.getOrdersHistoryPage();
-      await ordersHistoryPage.searchOrderAndSelect(orderIdValue);
-
-      const orderIdInHistory = await ordersHistoryPage.getOrderId();
-      expect(orderIdInHistory).not.toBeNull();
-      expect(orderIdValue.includes(orderIdInHistory ?? "")).toBeTruthy();
-
+      
 
   });
 
-  customtest('Client App login', async ({ page, testDataForOrder }: { page: any; testDataForOrder: any }) => {
+  customTest('Client App login', async ({ page, testDataForOrder }: { page: any; testDataForOrder: any }) => {
 
     const poManager = new POManager(page);
     const products = page.locator(".card-body");
